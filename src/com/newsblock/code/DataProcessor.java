@@ -7,6 +7,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.sql.Timestamp;
 import java.text.DateFormat;
@@ -32,7 +34,7 @@ import com.newsblock.model.ConfigProperties;
  */
 public class DataProcessor {
 
-	public void extractdata() {
+	public void extractdata() throws IOException {
 
 		CategoryRepository categoryRepository = new CategoryRepository();
 		ArticlesToCategoryRepository articlesToCategoryRepository = new ArticlesToCategoryRepository();
@@ -79,8 +81,17 @@ public class DataProcessor {
 					Articles newArticle = new Articles();
 					newArticle.setTitle((String) article_map.get("title"));
 					newArticle.setAuthor((String) article_map.get("author"));
-					newArticle.setDescription((String) article_map.get("summary"));
-					newArticle.setImage((String) article_map.get("media"));
+
+					String media = (String) article_map.get("media");
+					newArticle.setImage(media);
+
+					String summary = (String) article_map.get("summary");
+					if (summary.length() > 100) {
+						newArticle.setDescription((String) article_map.get("summary"));
+
+					} else {
+						continue;
+					}
 
 					String timestamp = (String) article_map.get("published_date");
 					newArticle.setSourcepublished(Timestamp.valueOf(timestamp));
@@ -113,6 +124,21 @@ public class DataProcessor {
 
 		}
 
+	}
+
+	private boolean getStatusCode(String url) throws IOException {
+
+		URL urlObj = new URL(url);
+		HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
+		connection.setRequestMethod("GET");
+		connection.connect();
+		int code = connection.getResponseCode();
+
+		if (code == 200) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	private LinkedTreeMap getResponseNewsAPI(String configPropertieURL, String category, String configPropertieAPIKey,
